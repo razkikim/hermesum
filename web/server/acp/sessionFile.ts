@@ -16,7 +16,7 @@ export type HermesSessionMessage = {
 
 export type HermesSessionRuntimeConfig = {
   hermesHome?: string
-  hermesAcpArgs?: string[]
+  hermesAcpArgs?: string[] | string
   hermesAcpCwd?: string
 }
 
@@ -56,16 +56,17 @@ function hermesSessionsDirs(config: HermesSessionRuntimeConfig) {
     process.env.HERMES_HOME,
     hermesHomeFromProfile(config.hermesAcpArgs),
     hermesProfileHomeFromNestedHome()
-  ].filter(Boolean).map(home => join(home, 'sessions')))
+  ].filter((home): home is string => typeof home === 'string' && home.length > 0).map(home => join(home, 'sessions')))
 }
 
-function hermesHomeFromProfile(args?: string[]) {
+function hermesHomeFromProfile(args?: string[] | string) {
   const profile = profileFromArgs(args)
   if (!profile || !process.env.HOME) return null
   return join(process.env.HOME, '.hermes', 'profiles', profile)
 }
 
-function profileFromArgs(args?: string[]) {
+function profileFromArgs(value?: string[] | string) {
+  const args = typeof value === 'string' ? value.split(' ').filter(Boolean) : value
   if (!args?.length) return null
   const index = args.indexOf('--profile')
   const profile = index >= 0 ? args[index + 1] : null

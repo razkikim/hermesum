@@ -19,6 +19,8 @@ async function loadSessionReasoningModule() {
   tempPaths.push(tempPath)
 
   let source = await readFile(sourcePath, 'utf8')
+  // The relocated module must still import the real session-file reader.
+  source = source.replace("'./sessionFile'", JSON.stringify(pathToFileURL(resolve('server/acp/sessionFile.ts')).href))
   source = source.replace("import type { AcpBridgeEvent } from '../../shared/acp/types'\n", '')
   source = source.replace("import type { AcpTurnMetadata } from './turnMetadata'\n", '')
   await mkdir(dirname(tempPath), { recursive: true })

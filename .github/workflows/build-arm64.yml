@@ -1,0 +1,50 @@
+name: Build Hermesum ARM64
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: hermesum-arm64-build
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Test
+        run: node --test tests/*.test.mjs
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Build
+        run: pnpm build
+      - name: Package
+        run: |
+          test -f .output/server/index.mjs
+          printf '%s\n' "$GITHUB_SHA" > .output/BUILD_COMMIT
+          node --version > .output/BUILD_NODE
+          uname -m > .output/BUILD_ARCH
+          tar -czf ../hermesum-linux-arm64.tar.gz .output
+          cd ..
+          sha256sum hermesum-linux-arm64.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hermesum-linux-arm64
+          path: |
+            hermesum-linux-arm64.tar.gz
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
